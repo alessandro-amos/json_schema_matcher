@@ -5,7 +5,7 @@ void main() {
   group('JSON Schema Matcher Tests', () {
     // Testes existentes
     test('should validate simple object', () {
-      final schema = {'name': typeOf<String>(), 'age': typeOf<int>()};
+      final schema = {'name': isA<String>(), 'age': isA<int>()};
 
       final validData = {'name': 'João', 'age': 30};
 
@@ -13,7 +13,7 @@ void main() {
     });
 
     test('should fail with missing field', () {
-      final schema = {'name': typeOf<String>(), 'age': typeOf<int>()};
+      final schema = {'name': isA<String>(), 'age': isA<int>()};
 
       final invalidData = {
         'name': 'João',
@@ -28,9 +28,9 @@ void main() {
 
     test('should validate nullable fields', () {
       final schema = {
-        'name': typeOf<String>(),
-        'email': typeOf<String?>(), // nullable
-        'age': typeOf<int?>(), // nullable
+        'name': isA<String>(),
+        'email': isA<String?>(), // nullable
+        'age': isA<int?>(), // nullable
       };
 
       // Test with missing nullable fields
@@ -52,9 +52,9 @@ void main() {
 
     test('should validate arrays', () {
       final schema = {
-        'users': jsonArray({
-          'name': typeOf<String>(),
-          'email': typeOf<String?>(),
+        'users': isJsonArray({
+          'name': isA<String>(),
+          'email': isA<String?>(),
         }),
       };
 
@@ -73,7 +73,7 @@ void main() {
     });
 
     test('should fail with wrong type', () {
-      final schema = {'name': typeOf<String>(), 'age': typeOf<int>()};
+      final schema = {'name': isA<String>(), 'age': isA<int>()};
 
       final invalidData = {
         'name': 'João',
@@ -105,23 +105,23 @@ void main() {
         expect(
           invalidData,
           isJsonObject({
-            'name': typeOf<String>(),
-            'posts': jsonArray({
-              'id': typeOf<int>(),
-              'title': typeOf<String>(),
+            'name': isA<String>(),
+            'posts': isJsonArray({
+              'id': isA<int>(),
+              'title': isA<String>(),
             }),
           }),
         );
         fail('Should have thrown TestFailure');
       } catch (e) {
-        expect(e.toString(), contains('Field [posts][0][id] is required'));
-        expect(e.toString(), contains('Field [posts][1][id] has invalid type'));
+        expect(e.toString(), contains('Field [posts][0][id]: is required'));
+        expect(e.toString(), contains('Field [posts][1][id]: is not an instance'));
       }
     });
 
     test('should validate empty array', () {
       final schema = {
-        'items': jsonArray({'id': typeOf<int>(), 'name': typeOf<String>()}),
+        'items': isJsonArray({'id': isA<int>(), 'name': isA<String>()}),
       };
 
       final validData = {'items': []};
@@ -131,7 +131,7 @@ void main() {
 
     test('should fail when array contains wrong type', () {
       final schema = {
-        'numbers': jsonArray({'value': typeOf<int>()}),
+        'numbers': isJsonArray({'value': isA<int>()}),
       };
 
       final invalidData = {
@@ -150,12 +150,12 @@ void main() {
 
     test('should handle nested objects', () {
       final schema = {
-        'user': jsonObject({
-          'id': typeOf<int>(),
-          'profile': jsonObject({
-            'firstName': typeOf<String>(),
-            'lastName': typeOf<String>(),
-            'bio': typeOf<String?>(),
+        'user': isJsonObject({
+          'id': isA<int>(),
+          'profile': isJsonObject({
+            'firstName': isA<String>(),
+            'lastName': isA<String>(),
+            'bio': isA<String?>(),
           }),
         }),
       };
@@ -171,7 +171,7 @@ void main() {
     });
 
     test('should fail with non-map data for object validation', () {
-      final schema = {'name': typeOf<String>()};
+      final schema = {'name': isA<String>()};
 
       expect(
         () => expect('not an object', isJsonObject(schema)),
@@ -180,7 +180,7 @@ void main() {
     });
 
     test('should fail with non-list data for array validation', () {
-      final schema = {'id': typeOf<int>()};
+      final schema = {'id': isA<int>()};
 
       expect(
         () => expect('not an array', isJsonArray(schema)),
@@ -188,47 +188,47 @@ void main() {
       );
     });
 
-    // Novos testes para jsonArrayOf
-    group('jsonArrayOf Tests', () {
+    // Novos testes para isJsonArrayOf
+    group('isJsonArrayOf Tests', () {
       test('should validate array of strings', () {
         final data = ['apple', 'banana', 'cherry'];
-        expect(data, isJsonArrayOf<String>());
+        expect(data, isJsonArrayOf(isA<String>()));
       });
 
       test('should validate array of integers', () {
         final data = [1, 2, 3, 42, 100];
-        expect(data, isJsonArrayOf<int>());
+        expect(data, isJsonArrayOf(isA<int>()));
       });
 
       test('should validate array of booleans', () {
         final data = [true, false, true, true];
-        expect(data, isJsonArrayOf<bool>());
+        expect(data, isJsonArrayOf(isA<bool>()));
       });
 
       test('should validate array of doubles', () {
         final data = [1.5, 2.7, 3.14, 42.0];
-        expect(data, isJsonArrayOf<double>());
+        expect(data, isJsonArrayOf(isA<double>()));
       });
 
       test('should validate empty array of primitives', () {
         final data = <String>[];
-        expect(data, isJsonArrayOf<String>());
+        expect(data, isJsonArrayOf(isA<String>()));
       });
 
       test('should validate nullable array of strings', () {
         final data = ['hello', null, 'world', null];
-        expect(data, isJsonArrayOf<String?>());
+        expect(data, isJsonArrayOf(isA<String?>()));
       });
 
       test('should validate nullable array of integers', () {
         final data = [1, null, 3, null, 5];
-        expect(data, isJsonArrayOf<int?>());
+        expect(data, isJsonArrayOf(isA<int?>()));
       });
 
       test('should fail with mixed types in string array', () {
         final data = ['hello', 42, 'world'];
         expect(
-          () => expect(data, isJsonArrayOf<String>()),
+          () => expect(data, isJsonArrayOf(isA<String>())),
           throwsA(isA<TestFailure>()),
         );
       });
@@ -236,14 +236,14 @@ void main() {
       test('should fail with null in non-nullable array', () {
         final data = ['hello', null, 'world'];
         expect(
-          () => expect(data, isJsonArrayOf<String>()),
+          () => expect(data, isJsonArrayOf(isA<String>())),
           throwsA(isA<TestFailure>()),
         );
       });
 
-      test('should fail when validating non-list with jsonArrayOf', () {
+      test('should fail when validating non-list with isJsonArrayOf', () {
         expect(
-          () => expect('not a list', isJsonArrayOf<String>()),
+          () => expect('not a list', isJsonArrayOf(isA<String>())),
           throwsA(isA<TestFailure>()),
         );
       });
@@ -251,12 +251,12 @@ void main() {
       test('should provide detailed error for invalid array item type', () {
         final data = [1, 2, 'not a number', 4];
         try {
-          expect(data, isJsonArrayOf<int>());
+          expect(data, isJsonArrayOf(isA<int>()));
           fail('Should have thrown TestFailure');
         } catch (e) {
-          expect(e.toString(), contains('[2] has invalid type'));
-          expect(e.toString(), contains('expected int'));
-          expect(e.toString(), contains('received String'));
+          expect(e.toString(), contains('[2]: is not an instance'));
+          expect(e.toString(), contains('instance of int'));
+          expect(e.toString(), contains('instance of String'));
         }
       });
     });
@@ -265,8 +265,8 @@ void main() {
     group('Objects with Primitive Arrays', () {
       test('should validate object with string array', () {
         final schema = {
-          'name': typeOf<String>(),
-          'tags': jsonArrayOf<String>(),
+          'name': isA<String>(),
+          'tags': isJsonArrayOf(isA<String>()),
         };
 
         final data = {
@@ -279,8 +279,8 @@ void main() {
 
       test('should validate object with nullable primitive array', () {
         final schema = {
-          'id': typeOf<int>(),
-          'scores': jsonArrayOf<double?>(),
+          'id': isA<int>(),
+          'scores': isJsonArrayOf(isA<double?>()),
         };
 
         final data = {
@@ -293,10 +293,10 @@ void main() {
 
       test('should validate object with multiple primitive arrays', () {
         final schema = {
-          'name': typeOf<String>(),
-          'numbers': jsonArrayOf<int>(),
-          'flags': jsonArrayOf<bool>(),
-          'scores': jsonArrayOf<double>(),
+          'name': isA<String>(),
+          'numbers': isJsonArrayOf(isA<int>()),
+          'flags': isJsonArrayOf(isA<bool>()),
+          'scores': isJsonArrayOf(isA<double>()),
         };
 
         final data = {
@@ -314,11 +314,11 @@ void main() {
     group('Type Validation Tests', () {
       test('should validate different primitive types', () {
         final schema = {
-          'stringField': typeOf<String>(),
-          'intField': typeOf<int>(),
-          'doubleField': typeOf<double>(),
-          'boolField': typeOf<bool>(),
-          'dynamicField': typeOf<dynamic>(),
+          'stringField': isA<String>(),
+          'intField': isA<int>(),
+          'doubleField': isA<double>(),
+          'boolField': isA<bool>(),
+          'dynamicField': isA<dynamic>(),
         };
 
         final data = {
@@ -333,7 +333,7 @@ void main() {
       });
 
       test('should accept any type for dynamic field', () {
-        final schema = {'field': typeOf<dynamic>()};
+        final schema = {'field': isA<dynamic>()};
 
         expect({'field': 'string'}, isJsonObject(schema));
         expect({'field': 42}, isJsonObject(schema));
@@ -351,8 +351,8 @@ void main() {
         final intData = {'value': 42};
         final doubleData = {'value': 42.0};
 
-        expect(intData, isJsonObject({'value': typeOf<num>()}));
-        expect(doubleData, isJsonObject({'value': typeOf<num>()}));
+        expect(intData, isJsonObject({'value': isA<num>()}));
+        expect(doubleData, isJsonObject({'value': isA<num>()}));
       });
     });
 
@@ -360,10 +360,10 @@ void main() {
     group('Complex Nesting Tests', () {
       test('should validate deeply nested objects', () {
         final schema = {
-          'level1': jsonObject({
-            'level2': jsonObject({
-              'level3': jsonObject({
-                'value': typeOf<String>(),
+          'level1': isJsonObject({
+            'level2': isJsonObject({
+              'level3': isJsonObject({
+                'value': isA<String>(),
               }),
             }),
           }),
@@ -382,11 +382,11 @@ void main() {
 
       test('should validate array of objects with nested arrays', () {
         final schema = {
-          'users': jsonArray({
-            'id': typeOf<int>(),
-            'name': typeOf<String>(),
-            'tags': jsonArrayOf<String>(),
-            'scores': jsonArrayOf<double?>(),
+          'users': isJsonArray({
+            'id': isA<int>(),
+            'name': isA<String>(),
+            'tags': isJsonArrayOf(isA<String>()),
+            'scores': isJsonArrayOf(isA<double?>()),
           }),
         };
 
@@ -412,12 +412,12 @@ void main() {
 
       test('should validate object with mixed array types', () {
         final schema = {
-          'metadata': jsonObject({
-            'stringList': jsonArrayOf<String>(),
-            'intList': jsonArrayOf<int>(),
-            'objectList': jsonArray({
-              'id': typeOf<int>(),
-              'active': typeOf<bool>(),
+          'metadata': isJsonObject({
+            'stringList': isJsonArrayOf(isA<String>()),
+            'intList': isJsonArrayOf(isA<int>()),
+            'objectList': isJsonArray({
+              'id': isA<int>(),
+              'active': isA<bool>(),
             }),
           }),
         };
@@ -441,10 +441,10 @@ void main() {
     group('Detailed Error Reporting Tests', () {
       test('should report nested object field errors', () {
         final schema = {
-          'user': jsonObject({
-            'profile': jsonObject({
-              'name': typeOf<String>(),
-              'age': typeOf<int>(),
+          'user': isJsonObject({
+            'profile': isJsonObject({
+              'name': isA<String>(),
+              'age': isA<int>(),
             }),
           }),
         };
@@ -464,14 +464,14 @@ void main() {
         } catch (e) {
           expect(
             e.toString(),
-            contains('[user][profile][age] has invalid type'),
+            contains('[user][profile][age]: is not an instance'),
           );
         }
       });
 
       test('should report array of primitives errors with correct path', () {
         final schema = {
-          'numbers': jsonArrayOf<int>(),
+          'numbers': isJsonArrayOf(isA<int>()),
         };
 
         final invalidData = {
@@ -482,18 +482,18 @@ void main() {
           expect(invalidData, isJsonObject(schema));
           fail('Should have thrown TestFailure');
         } catch (e) {
-          expect(e.toString(), contains('[numbers][2] has invalid type'));
-          expect(e.toString(), contains('[numbers][4] has invalid type'));
+          expect(e.toString(), contains('[numbers][2]: is not an instance'));
+          expect(e.toString(), contains('[numbers][4]: is not an instance'));
         }
       });
 
       test('should report multiple errors in nested structure', () {
         final schema = {
-          'data': jsonArray({
-            'id': typeOf<int>(),
-            'details': jsonObject({
-              'name': typeOf<String>(),
-              'value': typeOf<double>(),
+          'data': isJsonArray({
+            'id': isA<int>(),
+            'details': isJsonObject({
+              'name': isA<String>(),
+              'value': isA<double>(),
             }),
           }),
         };
@@ -522,18 +522,18 @@ void main() {
           fail('Should have thrown TestFailure');
         } catch (e) {
           final errorString = e.toString();
-          expect(errorString, contains('[data][0][id] has invalid type'));
+          expect(errorString, contains('[data][0][id]: is not an instance'));
           expect(
             errorString,
-            contains('[data][0][details][name] has invalid type'),
+            contains('[data][0][details][name]: is not an instance'),
           );
           expect(
             errorString,
-            contains('[data][0][details][value] has invalid type'),
+            contains('[data][0][details][value]: is not an instance'),
           );
           expect(
             errorString,
-            contains('[data][1][details][value] is required'),
+            contains('[data][1][details][value]: is required'),
           );
         }
       });
@@ -542,13 +542,13 @@ void main() {
     // Testes para edge cases
     group('Edge Cases', () {
       test('should handle empty objects', () {
-        final schema = <String, Validator>{};
+        final schema = <String, Matcher>{};
         final data = <String, dynamic>{};
         expect(data, isJsonObject(schema));
       });
 
       test('should ignore extra fields in objects by default', () {
-        final schema = {'name': typeOf<String>()};
+        final schema = {'name': isA<String>()};
         final data = {
           'name': 'John',
           'extraField': 'should be ignored',
@@ -558,30 +558,27 @@ void main() {
       });
 
       test('should handle null as root value for nullable type check', () {
-        final errors = <String>[];
-        typeOf<String?>()(null, 'test', errors);
-        expect(errors, isEmpty);
-
-        typeOf<String>()(null, 'test', errors);
-        expect(errors, isNotEmpty);
+        final data = null;
+        expect(data, isA<String?>());
+        expect(() => expect(data, isA<String>()), throwsA(isA<TestFailure>()));
       });
 
       test('should validate array containing only nulls for nullable type', () {
         final data = [null, null, null];
-        expect(data, isJsonArrayOf<String?>());
+        expect(data, isJsonArrayOf(isA<String?>()));
       });
 
       test('should handle very large arrays', () {
         final data = List.generate(1000, (i) => i);
-        expect(data, isJsonArrayOf<int>());
+        expect(data, isJsonArrayOf(isA<int>()));
       });
 
       test('should handle objects with many fields', () {
-        final schema = <String, Validator>{};
+        final schema = <String, Matcher>{};
         final data = <String, dynamic>{};
 
         for (int i = 0; i < 100; i++) {
-          schema['field$i'] = typeOf<int>();
+          schema['field$i'] = isA<int>();
           data['field$i'] = i;
         }
 
@@ -592,13 +589,13 @@ void main() {
     // Testes para validação de matcher behavior
     group('Matcher Behavior Tests', () {
       test('matcher should describe itself correctly', () {
-        final matcher = isJsonObject({'name': typeOf<String>()});
+        final matcher = isJsonObject({'name': isA<String>()});
         final description = matcher.describe(StringDescription());
         expect(description.toString(), contains('matches JSON schema'));
       });
 
       test('matcher should provide mismatch description', () {
-        final matcher = isJsonObject({'name': typeOf<String>()});
+        final matcher = isJsonObject({'name': isA<String>()});
         final invalidData = {'name': 123};
 
         final matchState = <String, dynamic>{};
@@ -621,7 +618,7 @@ void main() {
         );
         expect(
           mismatchDescription.toString(),
-          contains('[name] has invalid type'),
+          contains('[name]: is not an instance'),
         );
       });
     });
@@ -629,7 +626,7 @@ void main() {
     // Testes específicos para tipos do Dart
     group('Dart Type System Tests', () {
       test('should work with List<dynamic>', () {
-        final schema = {'items': typeOf<List>()};
+        final schema = {'items': isA<List>()};
         final data = {
           'items': [
             1,
@@ -642,7 +639,7 @@ void main() {
       });
 
       test('should work with Map<String, dynamic>', () {
-        final schema = {'config': typeOf<Map>()};
+        final schema = {'config': isA<Map>()};
         final data = {
           'config': {'key1': 'value1', 'key2': 42},
         };
@@ -654,17 +651,17 @@ void main() {
         final doubleValue = 42.5;
 
         // int should work for num
-        expect({'value': intValue}, isJsonObject({'value': typeOf<num>()}));
+        expect({'value': intValue}, isJsonObject({'value': isA<num>()}));
         // double should work for num
-        expect({'value': doubleValue}, isJsonObject({'value': typeOf<num>()}));
+        expect({'value': doubleValue}, isJsonObject({'value': isA<num>()}));
 
         // int should work for int
-        expect({'value': intValue}, isJsonObject({'value': typeOf<int>()}));
+        expect({'value': intValue}, isJsonObject({'value': isA<int>()}));
         // int should NOT work for double (in Dart, 42 is int, not double)
         expect(
           () => expect({
             'value': intValue,
-          }, isJsonObject({'value': typeOf<double>()})),
+          }, isJsonObject({'value': isA<double>()})),
           throwsA(isA<TestFailure>()),
         );
       });
@@ -673,7 +670,7 @@ void main() {
     // Testes para strictFields feature
     group('StrictFields Feature Tests', () {
       test('should reject extra fields in objects when strictFields is true', () {
-        final schema = {'name': typeOf<String>()};
+        final schema = {'name': isA<String>()};
         final data = {
           'name': 'John',
           'extraField': 'should cause error',
@@ -688,8 +685,8 @@ void main() {
 
       test('should accept exact schema match when strictFields is true', () {
         final schema = {
-          'name': typeOf<String>(),
-          'age': typeOf<int>(),
+          'name': isA<String>(),
+          'age': isA<int>(),
         };
         final data = {
           'name': 'John',
@@ -700,7 +697,7 @@ void main() {
       });
 
       test('should provide detailed error for unexpected fields', () {
-        final schema = {'name': typeOf<String>()};
+        final schema = {'name': isA<String>()};
         final data = {
           'name': 'John',
           'unexpected': 'field',
@@ -711,16 +708,16 @@ void main() {
           expect(data, isJsonObject(schema, strictFields: true));
           fail('Should have thrown TestFailure');
         } catch (e) {
-          expect(e.toString(), contains('[unexpected] is not expected'));
-          expect(e.toString(), contains('[another] is not expected'));
+          expect(e.toString(), contains('[unexpected]: is not expected'));
+          expect(e.toString(), contains('[another]: is not expected'));
         }
       });
 
       test('should reject extra fields in array objects when strictFields is true', () {
         final schema = {
-          'users': jsonArray({
-            'id': typeOf<int>(),
-            'name': typeOf<String>(),
+          'users': isJsonArray({
+            'id': isA<int>(),
+            'name': isA<String>(),
           }),
         };
         final data = {
@@ -743,7 +740,7 @@ void main() {
         );
 
         expect(
-          () => expect(data, isJsonArray({'id': typeOf<int>(), 'name': typeOf<String>()}, strictFields: true)),
+          () => expect(data, isJsonArray({'id': isA<int>(), 'name': isA<String>()}, strictFields: true)),
           throwsA(isA<TestFailure>()),
         );
       });
@@ -761,8 +758,8 @@ void main() {
         ];
 
         expect(data, isJsonArray({
-          'id': typeOf<int>(),
-          'name': typeOf<String>(),
+          'id': isA<int>(),
+          'name': isA<String>(),
         }, strictFields: true));
       });
 
@@ -782,23 +779,23 @@ void main() {
 
         try {
           expect(data, isJsonArray({
-            'id': typeOf<int>(),
-            'name': typeOf<String>(),
+            'id': isA<int>(),
+            'name': isA<String>(),
           }, strictFields: true));
           fail('Should have thrown TestFailure');
         } catch (e) {
-          expect(e.toString(), contains('[0][unexpected] is not expected'));
-          expect(e.toString(), contains('[1][another] is not expected'));
+          expect(e.toString(), contains('[0][unexpected]: is not expected'));
+          expect(e.toString(), contains('[1][another]: is not expected'));
         }
       });
 
       test('should work with nested strict validation', () {
         final schema = {
-          'user': jsonObject({
-            'id': typeOf<int>(),
-            'profile': jsonObject({
-              'name': typeOf<String>(),
-              'age': typeOf<int>(),
+          'user': isJsonObject({
+            'id': isA<int>(),
+            'profile': isJsonObject({
+              'name': isA<String>(),
+              'age': isA<int>(),
             }, strictFields: true),
           }, strictFields: true),
         };
@@ -833,8 +830,8 @@ void main() {
 
       test('strictFields should work with nullable fields', () {
         final schema = {
-          'name': typeOf<String>(),
-          'email': typeOf<String?>(),
+          'name': isA<String>(),
+          'email': isA<String?>(),
         };
 
         final validData = {

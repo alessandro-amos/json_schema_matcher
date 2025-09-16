@@ -4,16 +4,16 @@ A Dart library for JSON schema validation using native testing framework matcher
 
 ## Description
 
-JSON Schema Matcher provides a clean and intuitive API for validating complex JSON structures in your Dart tests. Using strongly-typed validators, you can ensure your JSON data follows the expected schema, with detailed error messages and support for optional fields.
+JSON Schema Matcher provides a clean and intuitive API for validating complex JSON structures in your Dart tests. Using strongly-typed matchers from the `test` package, you can ensure your JSON data follows the expected schema, with detailed error messages and support for optional fields.
 
 ## Features
 
-- ✅ **Type Validation**: Support for primitive and nullable types (`String?`, `int?`, etc.)
+- ✅ **Type Validation**: Support for primitive and nullable types using `isA<String>()`, `isA<String?>()`
 - ✅ **JSON Objects**: Validation of objects with required and optional fields
 - ✅ **Arrays**: Support for arrays of objects and primitive types
 - ✅ **Strict Validation**: Optional validation of unexpected fields
 - ✅ **Detailed Messages**: Specific errors with field paths
-- ✅ **Test Integration**: Works natively with Dart's `test` framework
+- ✅ **Test Integration**: Works natively with Dart's `test` framework matchers
 
 ## Installation
 
@@ -44,10 +44,10 @@ void main() {
     expect(
       userData,
       isJsonObject({
-        'id': typeOf<int>(),
-        'name': typeOf<String>(),
-        'email': typeOf<String>(),
-        'age': typeOf<int?>(), // optional field
+        'id': isA<int>(),
+        'name': isA<String>(),
+        'email': isA<String>(),
+        'age': isA<int?>(), // optional field
       }),
     );
   });
@@ -74,9 +74,9 @@ test('posts validation', () {
   expect(
     posts,
     isJsonArray({
-      'id': typeOf<int>(),
-      'title': typeOf<String>(),
-      'content': typeOf<String?>(), // allows null
+      'id': isA<int>(),
+      'title': isA<String>(),
+      'content': isA<String?>(), // allows null
     }),
   );
 });
@@ -88,41 +88,39 @@ test('posts validation', () {
 test('tags validation', () {
   final tags = ['dart', 'json', 'validation'];
 
-  expect(tags, isJsonArrayOf<String>());
+  expect(tags, isJsonArrayOf(isA<String>()));
 });
 
 test('numbers with nulls', () {
   final numbers = [1, 2, null, 4];
 
-  expect(numbers, isJsonArrayOf<int?>()); // allows null
+  expect(numbers, isJsonArrayOf(isA<int?>())); // allows null
 });
 ```
 
 ## API Reference
 
-### Main Validators
-
-- `typeOf<T>()` - Validates if the value is of type T
-- `jsonObject(Map<String, Validator>)` - Validates JSON objects
-- `jsonArray(Map<String, Validator>)` - Validates arrays of objects
-- `jsonArrayOf<T>()` - Validates arrays of primitive types
-
 ### Test Matchers
 
-- `isJsonObject(Map<String, Validator>, {bool strictFields = false})` - Matcher for objects
-- `isJsonArray(Map<String, Validator>, {bool strictFields = false})` - Matcher for arrays of objects
-- `isJsonArrayOf<T>()` - Matcher for primitive arrays
+- `isJsonObject(Map<String, Matcher>, {bool strictFields = false})` - Matcher for objects
+- `isJsonArray(Map<String, Matcher>, {bool strictFields = false})` - Matcher for arrays of objects
+- `isJsonArrayOf(Matcher)` - Matcher for primitive arrays
+
+### Standard Matchers from test package
+
+- `isA<T>()` - Validates if the value is of type T
+- `isA<T?>()` - Validates nullable types (can be null or absent)
 
 ### Optional Fields
 
-Use nullable types (`String?`, `int?`) for optional fields:
+Use nullable type matchers for optional fields:
 
 ```dart
 // Required field
-'name': typeOf<String>(),
+'name': isA<String>(),
 
 // Optional field (can be null or absent)
-'nickname': typeOf<String?>(),
+'nickname': isA<String?>(),
 ```
 
 ### Strict Field Validation
@@ -132,8 +130,8 @@ By default, the library ignores extra fields in JSON objects. Use `strictFields:
 ```dart
 test('strict validation', () {
   final schema = {
-    'name': typeOf<String>(),
-    'age': typeOf<int>(),
+    'name': isA<String>(),
+    'age': isA<int>(),
   };
 
   final dataWithExtraField = {
@@ -162,7 +160,7 @@ test('strict array validation', () {
     {'id': 2, 'name': 'Bob', 'extraField': 'not allowed'},
   ];
 
-  final schema = {'id': typeOf<int>(), 'name': typeOf<String>()};
+  final schema = {'id': isA<int>(), 'name': isA<String>()};
 
   // Fails because the second object has an extra field
   expect(

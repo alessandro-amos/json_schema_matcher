@@ -75,19 +75,14 @@ Validator _matcherToValidator(Matcher matcher) {
   return (value, path, errors) {
     final matchState = <String, dynamic>{};
     if (!matcher.matches(value, matchState)) {
-      // Check if this is our custom _JsonSchemaMatcher
       if (matcher is _JsonSchemaMatcher) {
-        // For our custom matcher, run the validation directly to get proper paths
         matcher.validator(value, path, errors);
       } else {
-        // For standard matchers, use the original behavior
         final mismatchDescription = StringDescription();
         matcher.describeMismatch(value, mismatchDescription, matchState, false);
 
-        // Get the error message
         String errorMessage = mismatchDescription.toString().trim();
 
-        // If the mismatch description is empty, try to get a better description
         if (errorMessage.isEmpty) {
           final expectedDescription = StringDescription();
           matcher.describe(expectedDescription);
@@ -138,7 +133,6 @@ Validator _jsonObjectWithMatchers(
       final fieldPath = _buildFieldPath(path, fieldName);
 
       if (!value.containsKey(fieldName)) {
-        // Check if the matcher accepts null by testing it
         final testErrors = <String>[];
         validator(null, 'test', testErrors);
         if (testErrors.isNotEmpty) {
@@ -149,7 +143,6 @@ Validator _jsonObjectWithMatchers(
       }
     }
 
-    // Check for unexpected fields when strictFields is enabled
     if (strictFields) {
       for (final key in value.keys) {
         if (!fieldValidators.containsKey(key)) {

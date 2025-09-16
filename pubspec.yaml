@@ -1,6 +1,6 @@
 name: json_schema_matcher
 description: A Dart library for JSON schema validation using native testing framework matchers with strongly-typed validators and detailed error messages.
-version: 1.0.0
+version: 1.0.1
 repository: https://github.com/alessandro-amos/json_schema_matcher
 
 environment:

@@ -1,82 +1,132 @@
 import 'package:test/expect.dart';
 
+/// Creates a matcher for JSON objects validation using standard Dart matchers.
+///
+/// The [strictFields] parameter, when set to true, makes the matcher
+/// fail if the object contains fields not defined in [fieldMatchers].
+/// Defaults to false.
+///
+/// Example:
+/// ```dart
+/// expect(userData, isJsonObject({
+///   'name': isA<String>(),
+///   'age': isA<int>(),
+///   'email': anyOf([isA<String>(), isNull]),
+///   'status': isIn(['active', 'inactive', 'pending']),
+/// }));
+/// ```
+Matcher isJsonObject(
+  Map<String, Matcher> fieldMatchers, {
+  bool strictFields = false,
+}) => _JsonSchemaMatcher(
+  _jsonObjectWithMatchers(fieldMatchers, strictFields: strictFields),
+);
+
+/// Creates a matcher for JSON arrays of objects validation using standard Dart matchers.
+///
+/// The [strictFields] parameter, when set to true, makes the matcher
+/// fail if any object in the array contains fields not defined in [itemFieldMatchers].
+/// Defaults to false.
+///
+/// Example:
+/// ```dart
+/// expect(usersList, isJsonArray({
+///   'id': isA<int>(),
+///   'name': isA<String>(),
+///   'active': isA<bool>(),
+///   'role': isIn(['admin', 'user']),
+/// }));
+/// ```
+Matcher isJsonArray(
+  Map<String, Matcher> itemFieldMatchers, {
+  bool strictFields = false,
+}) => _JsonSchemaMatcher(
+  _jsonArrayWithMatchers(itemFieldMatchers, strictFields: strictFields),
+);
+
+/// Creates a matcher for JSON arrays of primitive types validation using a matcher.
+///
+/// Example:
+/// ```dart
+/// expect(['tag1', 'tag2'], isJsonArrayOf(isA<String>()));
+/// expect(['active', 'done'], isJsonArrayOf(isIn(['active', 'pending', 'done'])));
+/// expect([1, null, 3], isJsonArrayOf(anyOf([isA<int>(), isNull])));
+/// ```
+Matcher isJsonArrayOf(Matcher itemMatcher) => _JsonSchemaMatcher(
+  _jsonArrayOfMatcher(itemMatcher),
+);
+
 /// Function that validates a value against a JSON schema.
 ///
 /// Receives the [value] to be validated, the current [path] in the object
 /// (for error reporting) and a list of [errors] where validation messages are added.
 typedef Validator =
-    void Function(dynamic value, String path, List<String> errors);
+    void Function(
+      dynamic value,
+      String path,
+      List<String> errors,
+    );
 
-/// Creates a validator that checks if the value is of type [T].
+/// Creates a validator from a standard Dart matcher.
 ///
-/// Supports nullable types - if [T] is nullable (like `String?`),
-/// accepts `null` values.
-///
-/// Example:
-/// ```dart
-/// final stringValidator = typeOf<String>();
-/// final nullableIntValidator = typeOf<int?>();
-/// ```
-Validator typeOf<T>() {
+/// Converts any [Matcher] into a validator function that can be used
+/// for JSON schema validation with proper error reporting and path tracking.
+Validator _matcherToValidator(Matcher matcher) {
   return (value, path, errors) {
-    final isNullable = null is T;
+    final matchState = <String, dynamic>{};
+    if (!matcher.matches(value, matchState)) {
+      // Check if this is our custom _JsonSchemaMatcher
+      if (matcher is _JsonSchemaMatcher) {
+        // For our custom matcher, run the validation directly to get proper paths
+        matcher.validator(value, path, errors);
+      } else {
+        // For standard matchers, use the original behavior
+        final mismatchDescription = StringDescription();
+        matcher.describeMismatch(value, mismatchDescription, matchState, false);
 
-    if (value == null && isNullable) {
-      return;
-    }
+        // Get the error message
+        String errorMessage = mismatchDescription.toString().trim();
 
-    if (value is! T) {
-      final expectedType = T.toString();
-      final actualType = value.runtimeType.toString();
-      errors.add(
-        'Field $path has invalid type '
-        '(expected $expectedType, received $actualType)',
-      );
+        // If the mismatch description is empty, try to get a better description
+        if (errorMessage.isEmpty) {
+          final expectedDescription = StringDescription();
+          matcher.describe(expectedDescription);
+          final expected = expectedDescription.toString();
+
+          // Create a more descriptive error message
+          if (expected.isNotEmpty) {
+            errorMessage = 'does not match $expected (got: $value)';
+          } else {
+            errorMessage = 'validation failed (got: $value)';
+          }
+        }
+
+        errors.add('Field $path: $errorMessage');
+      }
     }
   };
 }
 
-/// Checks if a validator accepts null values.
+/// Creates a validator for JSON objects with specific fields using matchers.
 ///
-/// Used internally to determine if a field is required.
-bool _validatorAcceptsNull(Validator validator) {
-  final testErrors = <String>[];
-  validator(null, 'test', testErrors);
-  return testErrors.isEmpty;
-}
-
-/// Creates a validator for JSON objects with specific fields.
-///
-/// The [fieldValidators] parameter maps field names to their validators.
-/// If a validator doesn't accept null, the field is considered required.
+/// The [fieldMatchers] parameter maps field names to their matchers.
+/// Use standard Dart matchers like [isA], [equals], [anything], etc.
 ///
 /// The [strictFields] parameter, when set to true, makes the validator
-/// fail if the object contains fields not defined in [fieldValidators].
+/// fail if the object contains fields not defined in [fieldMatchers].
 /// Defaults to false.
-///
-/// For testing, consider using [isJsonObject] helper instead.
-///
-/// Example:
-/// ```dart
-/// final userValidator = jsonObject({
-///   'name': typeOf<String>(),
-///   'age': typeOf<int>(),
-///   'email': typeOf<String?>(), // optional
-/// });
-///
-/// // Strict validation - fails if extra fields are present
-/// final strictValidator = jsonObject({
-///   'name': typeOf<String>(),
-/// }, strictFields: true);
-/// ```
-Validator jsonObject(
-  Map<String, Validator> fieldValidators, {
+Validator _jsonObjectWithMatchers(
+  Map<String, Matcher> fieldMatchers, {
   bool strictFields = false,
 }) {
+  final fieldValidators = fieldMatchers.map(
+    (key, matcher) => MapEntry(key, _matcherToValidator(matcher)),
+  );
+
   return (value, path, errors) {
     if (value is! Map) {
       errors.add(
-        'Field $path has invalid type '
+        'Field $path: has invalid type '
         '(expected Map, received ${value.runtimeType})',
       );
       return;
@@ -88,8 +138,11 @@ Validator jsonObject(
       final fieldPath = _buildFieldPath(path, fieldName);
 
       if (!value.containsKey(fieldName)) {
-        if (!_validatorAcceptsNull(validator)) {
-          errors.add('Field $fieldPath is required');
+        // Check if the matcher accepts null by testing it
+        final testErrors = <String>[];
+        validator(null, 'test', testErrors);
+        if (testErrors.isNotEmpty) {
+          errors.add('Field $fieldPath: is required');
         }
       } else {
         validator(value[fieldName], fieldPath, errors);
@@ -101,44 +154,29 @@ Validator jsonObject(
       for (final key in value.keys) {
         if (!fieldValidators.containsKey(key)) {
           final fieldPath = _buildFieldPath(path, key.toString());
-          errors.add('Field $fieldPath is not expected');
+          errors.add('Field $fieldPath: is not expected');
         }
       }
     }
   };
 }
 
-/// Creates a validator for JSON arrays where each item follows a specific schema.
+/// Creates a validator for JSON arrays where each item follows a specific schema using matchers.
 ///
-/// The [itemFieldValidators] parameter defines the validators for each field
+/// The [itemFieldMatchers] parameter defines the matchers for each field
 /// of the objects within the array.
 ///
 /// The [strictFields] parameter, when set to true, makes the validator
-/// fail if any object in the array contains fields not defined in [itemFieldValidators].
+/// fail if any object in the array contains fields not defined in [itemFieldMatchers].
 /// Defaults to false.
-///
-/// For testing, consider using [isJsonArray] helper instead.
-///
-/// Example:
-/// ```dart
-/// final usersValidator = jsonArray({
-///   'id': typeOf<int>(),
-///   'name': typeOf<String>(),
-/// });
-///
-/// // Strict validation - fails if extra fields are present in any object
-/// final strictValidator = jsonArray({
-///   'id': typeOf<int>(),
-/// }, strictFields: true);
-/// ```
-Validator jsonArray(
-  Map<String, Validator> itemFieldValidators, {
+Validator _jsonArrayWithMatchers(
+  Map<String, Matcher> itemFieldMatchers, {
   bool strictFields = false,
 }) {
   return (value, path, errors) {
     if (value is! List) {
       errors.add(
-        'Field $path has invalid type '
+        'Field $path: has invalid type '
         '(expected List, received ${value.runtimeType})',
       );
       return;
@@ -156,75 +194,35 @@ Validator jsonArray(
         continue;
       }
 
-      for (final entry in itemFieldValidators.entries) {
-        final fieldName = entry.key;
-        final validator = entry.value;
-        final fieldPath = _buildFieldPath(itemPath, fieldName);
-
-        if (!item.containsKey(fieldName)) {
-          if (!_validatorAcceptsNull(validator)) {
-            errors.add('Field $fieldPath is required');
-          }
-        } else {
-          validator(item[fieldName], fieldPath, errors);
-        }
-      }
-
-      // Check for unexpected fields when strictFields is enabled
-      if (strictFields) {
-        for (final key in item.keys) {
-          if (!itemFieldValidators.containsKey(key)) {
-            final fieldPath = _buildFieldPath(itemPath, key.toString());
-            errors.add('Field $fieldPath is not expected');
-          }
-        }
-      }
+      final objectValidator = _jsonObjectWithMatchers(
+        itemFieldMatchers,
+        strictFields: strictFields,
+      );
+      objectValidator(item, itemPath, errors);
     }
   };
 }
 
-/// Creates a validator for JSON arrays of primitive types.
+/// Creates a validator for JSON arrays of primitive types using a matcher.
 ///
-/// Unlike [jsonArray], this validates arrays of primitive values directly,
+/// Unlike [_jsonArrayWithMatchers], this validates arrays of primitive values directly,
 /// not arrays of objects.
-///
-/// Supports nullable types - if [T] is nullable (like `String?`),
-/// accepts `null` values in the array.
-///
-/// Example:
-/// ```dart
-/// final tagsValidator = jsonArrayOf<String>();      // ['tag1', 'tag2']
-/// final numbersValidator = jsonArrayOf<int>();      // [1, 2, 3]
-/// final nullableValidator = jsonArrayOf<String?>(); // ['text', null, 'more']
-/// ```
-Validator jsonArrayOf<T>() {
+Validator _jsonArrayOfMatcher(Matcher itemMatcher) {
+  final itemValidator = _matcherToValidator(itemMatcher);
+
   return (value, path, errors) {
     if (value is! List) {
       errors.add(
-        'Field $path has invalid type '
+        'Field $path: has invalid type '
         '(expected List, received ${value.runtimeType})',
       );
       return;
     }
 
-    final isNullable = null is T;
-
     for (int i = 0; i < value.length; i++) {
       final itemPath = _buildIndexPath(path, i);
       final item = value[i];
-
-      if (item == null && isNullable) {
-        continue;
-      }
-
-      if (item is! T) {
-        final expectedType = T.toString();
-        final actualType = item.runtimeType.toString();
-        errors.add(
-          'Item $itemPath has invalid type '
-          '(expected $expectedType, received $actualType)',
-        );
-      }
+      itemValidator(item, itemPath, errors);
     }
   };
 }
@@ -288,29 +286,3 @@ class _JsonSchemaMatcher extends Matcher {
     return mismatchDescription;
   }
 }
-
-/// Creates a matcher for JSON objects validation.
-///
-/// The [strictFields] parameter, when set to true, makes the matcher
-/// fail if the object contains fields not defined in [fieldValidators].
-/// Defaults to false.
-Matcher isJsonObject(
-  Map<String, Validator> fieldValidators, {
-  bool strictFields = false,
-}) =>
-    _JsonSchemaMatcher(jsonObject(fieldValidators, strictFields: strictFields));
-
-/// Creates a matcher for JSON arrays of objects validation.
-///
-/// The [strictFields] parameter, when set to true, makes the matcher
-/// fail if any object in the array contains fields not defined in [itemFieldValidators].
-/// Defaults to false.
-Matcher isJsonArray(
-  Map<String, Validator> itemFieldValidators, {
-  bool strictFields = false,
-}) => _JsonSchemaMatcher(
-  jsonArray(itemFieldValidators, strictFields: strictFields),
-);
-
-/// Creates a matcher for JSON arrays of primitive types validation.
-Matcher isJsonArrayOf<T>() => _JsonSchemaMatcher(jsonArrayOf<T>());

@@ -13,10 +13,10 @@ void main() {
     expect(
       userData,
       isJsonObject({
-        'id': typeOf<int>(),
-        'name': typeOf<String>(),
-        'email': typeOf<String>(),
-        'age': typeOf<int>(),
+        'id': isA<int>(),
+        'name': isA<String>(),
+        'email': isA<String>(),
+        'age': isA<int>(),
       }),
     );
   });
@@ -31,10 +31,10 @@ void main() {
     expect(
       userData,
       isJsonObject({
-        'id': typeOf<int>(),
-        'name': typeOf<String>(),
-        'email': typeOf<String>(),
-        'phone': typeOf<String?>(), // optional field
+        'id': isA<int>(),
+        'name': isA<String>(),
+        'email': isA<String>(),
+        'phone': isA<String?>(), // optional field
       }),
     );
   });
@@ -48,8 +48,8 @@ void main() {
     expect(
       users,
       isJsonArray({
-        'id': typeOf<int>(),
-        'name': typeOf<String>(),
+        'id': isA<int>(),
+        'name': isA<String>(),
       }),
     );
   });
@@ -57,7 +57,7 @@ void main() {
   test('array of strings', () {
     expect(
       ['dart', 'json', 'validation'],
-      isJsonArrayOf<String>(),
+      isJsonArrayOf(isA<String>()),
     );
   });
 
@@ -76,12 +76,12 @@ void main() {
     expect(
       data,
       isJsonObject({
-        'user': jsonObject({
-          'id': typeOf<int>(),
-          'name': typeOf<String>(),
-          'profile': jsonObject({
-            'firstName': typeOf<String>(),
-            'lastName': typeOf<String>(),
+        'user': isJsonObject({
+          'id': isA<int>(),
+          'name': isA<String>(),
+          'profile': isJsonObject({
+            'firstName': isA<String>(),
+            'lastName': isA<String>(),
           }),
         }),
       }),

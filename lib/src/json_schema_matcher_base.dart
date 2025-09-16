@@ -82,7 +82,9 @@ Validator jsonObject(
       return;
     }
 
-    fieldValidators.forEach((fieldName, validator) {
+    for (final entry in fieldValidators.entries) {
+      final fieldName = entry.key;
+      final validator = entry.value;
       final fieldPath = _buildFieldPath(path, fieldName);
 
       if (!value.containsKey(fieldName)) {
@@ -92,16 +94,16 @@ Validator jsonObject(
       } else {
         validator(value[fieldName], fieldPath, errors);
       }
-    });
+    }
 
     // Check for unexpected fields when strictFields is enabled
     if (strictFields) {
-      value.keys.forEach((key) {
+      for (final key in value.keys) {
         if (!fieldValidators.containsKey(key)) {
           final fieldPath = _buildFieldPath(path, key.toString());
           errors.add('Field $fieldPath is not expected');
         }
-      });
+      }
     }
   };
 }
@@ -154,7 +156,9 @@ Validator jsonArray(
         continue;
       }
 
-      itemFieldValidators.forEach((fieldName, validator) {
+      for (final entry in itemFieldValidators.entries) {
+        final fieldName = entry.key;
+        final validator = entry.value;
         final fieldPath = _buildFieldPath(itemPath, fieldName);
 
         if (!item.containsKey(fieldName)) {
@@ -164,16 +168,16 @@ Validator jsonArray(
         } else {
           validator(item[fieldName], fieldPath, errors);
         }
-      });
+      }
 
       // Check for unexpected fields when strictFields is enabled
       if (strictFields) {
-        item.keys.forEach((key) {
+        for (final key in item.keys) {
           if (!itemFieldValidators.containsKey(key)) {
             final fieldPath = _buildFieldPath(itemPath, key.toString());
             errors.add('Field $fieldPath is not expected');
           }
-        });
+        }
       }
     }
   };

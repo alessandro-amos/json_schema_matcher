@@ -18,9 +18,10 @@ import 'package:test/expect.dart';
 Matcher isJsonObject(
   Map<String, Matcher> fieldMatchers, {
   bool strictFields = false,
-}) => _JsonSchemaMatcher(
-  _jsonObjectWithMatchers(fieldMatchers, strictFields: strictFields),
-);
+}) =>
+    _JsonSchemaMatcher(
+      _jsonObjectWithMatchers(fieldMatchers, strictFields: strictFields),
+    );
 
 /// Creates a matcher for JSON arrays of objects validation using standard Dart matchers.
 ///
@@ -40,9 +41,10 @@ Matcher isJsonObject(
 Matcher isJsonArray(
   Map<String, Matcher> itemFieldMatchers, {
   bool strictFields = false,
-}) => _JsonSchemaMatcher(
-  _jsonArrayWithMatchers(itemFieldMatchers, strictFields: strictFields),
-);
+}) =>
+    _JsonSchemaMatcher(
+      _jsonArrayWithMatchers(itemFieldMatchers, strictFields: strictFields),
+    );
 
 /// Creates a matcher for JSON arrays of primitive types validation using a matcher.
 ///
@@ -53,19 +55,18 @@ Matcher isJsonArray(
 /// expect([1, null, 3], isJsonArrayOf(anyOf([isA<int>(), isNull])));
 /// ```
 Matcher isJsonArrayOf(Matcher itemMatcher) => _JsonSchemaMatcher(
-  _jsonArrayOfMatcher(itemMatcher),
-);
+      _jsonArrayOfMatcher(itemMatcher),
+    );
 
 /// Function that validates a value against a JSON schema.
 ///
 /// Receives the [value] to be validated, the current [path] in the object
 /// (for error reporting) and a list of [errors] where validation messages are added.
-typedef Validator =
-    void Function(
-      dynamic value,
-      String path,
-      List<String> errors,
-    );
+typedef Validator = void Function(
+  dynamic value,
+  String path,
+  List<String> errors,
+);
 
 /// Creates a validator from a standard Dart matcher.
 ///

@@ -21,7 +21,7 @@ Add to your `pubspec.yaml`:
 
 ```yaml
 dev_dependencies:
-  json_schema_matcher: ^1.0.0
+  json_schema_matcher: ^1.0.3
 ```
 
 ## Basic Usage

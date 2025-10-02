@@ -1,3 +1,7 @@
+## 1.0.3
+
+- Some Fixes and improvements to get more pub points
+
 ## 1.0.2
 
 - Changed minimum Dart SDK to 3.6.0
